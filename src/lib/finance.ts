@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { ensureDatabase, prisma } from "@/lib/prisma";
 import { currencies, type CurrencyCode } from "@/lib/money";
 import { getMonthLabel, shiftMonthKey } from "@/lib/months";
 
@@ -19,6 +19,8 @@ type CurrencyTotals = Record<
 >;
 
 export async function getDashboardData(monthKey: string) {
+  await ensureDatabase();
+
   const { month, members } = await ensureBaseData(monthKey);
 
   const monthWithData = await prisma.monthBudget.findUniqueOrThrow({
@@ -122,6 +124,8 @@ export async function getDashboardData(monthKey: string) {
 export type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
 
 export async function ensureMonth(monthKey: string) {
+  await ensureDatabase();
+
   return prisma.monthBudget.upsert({
     create: {
       key: monthKey,

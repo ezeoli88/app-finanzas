@@ -20,7 +20,13 @@ Despues entra desde el telefono a `http://IP-DE-TU-PC:3000`.
 
 ## Base de datos
 
-La app usa SQLite local en `prisma/dev.db`. El archivo se crea solo al abrir la app y queda fuera de Git.
+La app usa Postgres en produccion. En Vercel, crea o conecta una base Postgres/Neon y agrega la variable:
+
+```bash
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require"
+```
+
+La primera visita crea las tablas necesarias si todavia no existen.
 
 Prisma genera el cliente con:
 

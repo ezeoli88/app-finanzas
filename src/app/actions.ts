@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { ensureDatabase, prisma } from "@/lib/prisma";
 import { ensureMonth } from "@/lib/finance";
 import { currencies, parseAmountToCents } from "@/lib/money";
 
@@ -35,6 +35,8 @@ const createExpenseMovementSchema = z.object({
 });
 
 export async function updateIncome(formData: FormData) {
+  await ensureDatabase();
+
   const parsed = updateIncomeSchema.safeParse({
     monthKey: formData.get("monthKey"),
     memberId: formData.get("memberId"),
@@ -73,6 +75,8 @@ export async function updateIncome(formData: FormData) {
 }
 
 export async function createExpense(formData: FormData) {
+  await ensureDatabase();
+
   const parsed = createExpenseSchema.safeParse({
     category: formData.get("category") || undefined,
     currency: formData.get("currency"),
@@ -103,6 +107,8 @@ export async function createExpense(formData: FormData) {
 }
 
 export async function toggleExpenseStatus(formData: FormData) {
+  await ensureDatabase();
+
   const parsed = expenseIdSchema.safeParse({
     expenseId: formData.get("expenseId"),
   });
@@ -155,6 +161,8 @@ export async function toggleExpenseStatus(formData: FormData) {
 }
 
 export async function createExpenseMovement(formData: FormData) {
+  await ensureDatabase();
+
   const parsed = createExpenseMovementSchema.safeParse({
     expenseId: formData.get("expenseId"),
     note: formData.get("movementNote") || undefined,
@@ -179,6 +187,8 @@ export async function createExpenseMovement(formData: FormData) {
 }
 
 export async function deleteExpenseMovement(formData: FormData) {
+  await ensureDatabase();
+
   const parsed = movementIdSchema.safeParse({
     movementId: formData.get("movementId"),
   });
@@ -209,6 +219,8 @@ export async function deleteExpenseMovement(formData: FormData) {
 }
 
 export async function deleteExpense(formData: FormData) {
+  await ensureDatabase();
+
   const parsed = expenseIdSchema.safeParse({
     expenseId: formData.get("expenseId"),
   });
