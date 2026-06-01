@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Currency {
+  ARS
+  USD
+}
+
+enum ExpenseStatus {
+  PENDING
+  PAID
+}
+
+model HouseholdMember {
+  id        String    @id @default(cuid())
+  name      String
+  role      String?
+  color     String    @default("#0f766e")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  incomes   Income[]
+  expenses  Expense[] @relation("ExpensePaidBy")
+}
+
+model MonthBudget {
+  id        String    @id @default(cuid())
+  key       String    @unique
+  label     String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  incomes   Income[]
+  expenses  Expense[]
+}
+
+model Income {
+  id          String          @id @default(cuid())
+  amountCents Int             @default(0)
+  currency    Currency        @default(ARS)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  memberId    String
+  monthId     String
+  member      HouseholdMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  month       MonthBudget     @relation(fields: [monthId], references: [id], onDelete: Cascade)
+
+  @@unique([monthId, memberId, currency])
+  @@index([memberId])
+}
+
+model Expense {
+  id          String           @id @default(cuid())
+  name        String
+  amountCents Int
+  currency    Currency         @default(ARS)
+  status      ExpenseStatus    @default(PENDING)
+  category    String?
+  note        String?
+  paidAt      DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  monthId     String
+  paidById    String?
+  month       MonthBudget      @relation(fields: [monthId], references: [id], onDelete: Cascade)
+  paidBy      HouseholdMember? @relation("ExpensePaidBy", fields: [paidById], references: [id], onDelete: SetNull)
+  movements   ExpenseMovement[]
+
+  @@index([monthId, status])
+  @@index([paidById])
+}
+
+model ExpenseMovement {
+  id          String   @id @default(cuid())
+  amountCents Int
+  note        String?
+  spentAt     DateTime @default(now())
+  createdAt   DateTime @default(now())
+  expenseId   String
+  expense     Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  @@index([expenseId])
+}
