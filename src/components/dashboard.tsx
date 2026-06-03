@@ -7,6 +7,7 @@ import {
   BadgeDollarSign,
   Check,
   Circle,
+  LogOut,
   Plus,
   ReceiptText,
   Save,
@@ -23,6 +24,7 @@ import {
   toggleExpenseStatus,
   updateIncome,
 } from "@/app/actions";
+import { logout } from "@/app/auth-actions";
 import { currencies, formatMoney } from "@/lib/money";
 import type { DashboardData } from "@/lib/finance";
 
@@ -59,6 +61,16 @@ export function Dashboard({ data }: DashboardProps) {
             <MonthButton href={`/?month=${data.month.nextKey}`} label="Mes siguiente">
               <ArrowRight aria-hidden className="h-5 w-5" />
             </MonthButton>
+            <form action={logout}>
+              <button
+                aria-label="Cerrar sesion"
+                className="flex h-11 min-w-11 items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-3 text-slate-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                title="Cerrar sesion"
+                type="submit"
+              >
+                <LogOut aria-hidden className="h-5 w-5" />
+              </button>
+            </form>
           </nav>
         </header>
 

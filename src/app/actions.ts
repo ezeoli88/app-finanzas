@@ -5,6 +5,7 @@ import { z } from "zod";
 import { ensureDatabase, prisma } from "@/lib/prisma";
 import { ensureMonth } from "@/lib/finance";
 import { currencies, parseAmountToCents } from "@/lib/money";
+import { requireAuth } from "@/lib/auth";
 
 const monthKey = z.string().regex(/^\d{4}-\d{2}$/);
 
@@ -35,6 +36,7 @@ const createExpenseMovementSchema = z.object({
 });
 
 export async function updateIncome(formData: FormData) {
+  await requireAuth();
   await ensureDatabase();
 
   const parsed = updateIncomeSchema.safeParse({
@@ -75,6 +77,7 @@ export async function updateIncome(formData: FormData) {
 }
 
 export async function createExpense(formData: FormData) {
+  await requireAuth();
   await ensureDatabase();
 
   const parsed = createExpenseSchema.safeParse({
@@ -107,6 +110,7 @@ export async function createExpense(formData: FormData) {
 }
 
 export async function toggleExpenseStatus(formData: FormData) {
+  await requireAuth();
   await ensureDatabase();
 
   const parsed = expenseIdSchema.safeParse({
@@ -161,6 +165,7 @@ export async function toggleExpenseStatus(formData: FormData) {
 }
 
 export async function createExpenseMovement(formData: FormData) {
+  await requireAuth();
   await ensureDatabase();
 
   const parsed = createExpenseMovementSchema.safeParse({
@@ -187,6 +192,7 @@ export async function createExpenseMovement(formData: FormData) {
 }
 
 export async function deleteExpenseMovement(formData: FormData) {
+  await requireAuth();
   await ensureDatabase();
 
   const parsed = movementIdSchema.safeParse({
@@ -219,6 +225,7 @@ export async function deleteExpenseMovement(formData: FormData) {
 }
 
 export async function deleteExpense(formData: FormData) {
+  await requireAuth();
   await ensureDatabase();
 
   const parsed = expenseIdSchema.safeParse({
