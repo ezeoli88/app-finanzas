@@ -1,6 +1,7 @@
 import { ensureDatabase, prisma } from "@/lib/prisma";
 import { currencies, type CurrencyCode } from "@/lib/money";
 import { getMonthLabel, shiftMonthKey } from "@/lib/months";
+import { requireAuth } from "@/lib/auth";
 
 const defaultMembers = [
   { name: "Yo", role: "Sueldo neto", color: "#0f766e" },
@@ -19,6 +20,7 @@ type CurrencyTotals = Record<
 >;
 
 export async function getDashboardData(monthKey: string) {
+  await requireAuth();
   await ensureDatabase();
 
   const { month, members } = await ensureBaseData(monthKey);

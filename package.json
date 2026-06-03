@@ -9,7 +9,9 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:migrate:local-to-postgres": "node scripts/migrate-sqlite-to-postgres.mjs",
+    "auth:hash": "node scripts/hash-password.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
