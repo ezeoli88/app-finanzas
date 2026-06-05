@@ -14,7 +14,7 @@ import {
   Trash2,
   WalletCards,
 } from "lucide-react";
-import type { CSSProperties } from "react";
+import { useOptimistic, type CSSProperties } from "react";
 import { useFormStatus } from "react-dom";
 import {
   createExpenseMovement,
@@ -32,11 +32,43 @@ type DashboardProps = {
   data: DashboardData;
 };
 
+type Expense = DashboardData["expenses"][number];
+type ExpenseStatusAction = (formData: FormData) => void | Promise<void>;
+type Member = DashboardData["members"][number];
+
 export function Dashboard({ data }: DashboardProps) {
-  const pendingExpenses = data.expenses.filter(
+  const [optimisticData, toggleOptimisticExpenseStatus] = useOptimistic<
+    DashboardData,
+    string
+  >(data, (currentData, expenseId) => {
+    const expenses = toggleExpenseStatusOptimistically(
+      currentData.expenses,
+      expenseId,
+    );
+
+    return {
+      ...currentData,
+      expenses,
+      totals: calculateTotals(currentData.members, expenses),
+    };
+  });
+
+  const toggleExpenseStatusAction = async (formData: FormData) => {
+    const expenseId = formData.get("expenseId");
+
+    if (typeof expenseId === "string" && expenseId.length > 0) {
+      toggleOptimisticExpenseStatus(expenseId);
+    }
+
+    await toggleExpenseStatus(formData);
+  };
+
+  const pendingExpenses = optimisticData.expenses.filter(
     (expense) => expense.status === "PENDING",
   );
-  const paidExpenses = data.expenses.filter((expense) => expense.status === "PAID");
+  const paidExpenses = optimisticData.expenses.filter(
+    (expense) => expense.status === "PAID",
+  );
 
   return (
     <main className="min-h-screen bg-[#f5f7fb] text-slate-950">
@@ -47,18 +79,24 @@ export function Dashboard({ data }: DashboardProps) {
               Finanzas familiares
             </p>
             <h1 className="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">
-              {data.month.label}
+              {optimisticData.month.label}
             </h1>
           </div>
 
           <nav className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
-            <MonthButton href={`/?month=${data.month.previousKey}`} label="Mes anterior">
+            <MonthButton
+              href={`/?month=${optimisticData.month.previousKey}`}
+              label="Mes anterior"
+            >
               <ArrowLeft aria-hidden className="h-5 w-5" />
             </MonthButton>
             <MonthButton href="/" label="Mes actual">
               <span className="text-sm font-semibold">Hoy</span>
             </MonthButton>
-            <MonthButton href={`/?month=${data.month.nextKey}`} label="Mes siguiente">
+            <MonthButton
+              href={`/?month=${optimisticData.month.nextKey}`}
+              label="Mes siguiente"
+            >
               <ArrowRight aria-hidden className="h-5 w-5" />
             </MonthButton>
             <form action={logout}>
@@ -81,8 +119,12 @@ export function Dashboard({ data }: DashboardProps) {
             tone="income"
           />
           <div className="grid gap-3 md:grid-cols-2">
-            {data.members.map((member) => (
-              <IncomeCard key={member.id} member={member} monthKey={data.month.key} />
+            {optimisticData.members.map((member) => (
+              <IncomeCard
+                key={member.id}
+                member={member}
+                monthKey={optimisticData.month.key}
+              />
             ))}
           </div>
         </section>
@@ -98,7 +140,7 @@ export function Dashboard({ data }: DashboardProps) {
               <CurrencySummary
                 currency={currency}
                 key={currency}
-                totals={data.totals[currency]}
+                totals={optimisticData.totals[currency]}
               />
             ))}
           </div>
@@ -111,7 +153,7 @@ export function Dashboard({ data }: DashboardProps) {
               title="Nuevo gasto"
               tone="expense"
             />
-            <ExpenseForm monthKey={data.month.key} />
+            <ExpenseForm monthKey={optimisticData.month.key} />
           </section>
 
           <section className="flex min-w-0 flex-col gap-4">
@@ -123,11 +165,13 @@ export function Dashboard({ data }: DashboardProps) {
             <ExpenseGroup
               emptyText="Sin gastos en curso"
               expenses={pendingExpenses}
+              onToggleExpenseStatus={toggleExpenseStatusAction}
               title="En curso"
             />
             <ExpenseGroup
               emptyText="Todavia no hay gastos completos"
               expenses={paidExpenses}
+              onToggleExpenseStatus={toggleExpenseStatusAction}
               title="Completos"
             />
           </section>
@@ -417,10 +461,12 @@ function ExpenseForm({ monthKey }: { monthKey: string }) {
 function ExpenseGroup({
   emptyText,
   expenses,
+  onToggleExpenseStatus,
   title,
 }: {
   emptyText: string;
-  expenses: DashboardData["expenses"];
+  expenses: Expense[];
+  onToggleExpenseStatus: ExpenseStatusAction;
   title: string;
 }) {
   return (
@@ -441,7 +487,11 @@ function ExpenseGroup({
       ) : (
         <ul className="grid gap-2">
           {expenses.map((expense) => (
-            <ExpenseItem expense={expense} key={expense.id} />
+            <ExpenseItem
+              expense={expense}
+              key={expense.id}
+              onToggleExpenseStatus={onToggleExpenseStatus}
+            />
           ))}
         </ul>
       )}
@@ -449,7 +499,13 @@ function ExpenseGroup({
   );
 }
 
-function ExpenseItem({ expense }: { expense: DashboardData["expenses"][number] }) {
+function ExpenseItem({
+  expense,
+  onToggleExpenseStatus,
+}: {
+  expense: Expense;
+  onToggleExpenseStatus: ExpenseStatusAction;
+}) {
   const isPaid = expense.status === "PAID";
   const overSpentCents = Math.max(expense.spentCents - expense.amountCents, 0);
   const remainingLabel =
@@ -462,7 +518,7 @@ function ExpenseItem({ expense }: { expense: DashboardData["expenses"][number] }
   return (
     <li className="rounded-md border border-slate-100 bg-slate-50 p-3">
       <div className="grid grid-cols-[44px_1fr_44px] items-center gap-2">
-        <form action={toggleExpenseStatus}>
+        <form action={onToggleExpenseStatus}>
           <input name="expenseId" type="hidden" value={expense.id} />
           <ExpenseStatusButton isPaid={isPaid} />
         </form>
@@ -606,6 +662,96 @@ function ExpenseStatusButton({ isPaid }: { isPaid: boolean }) {
       )}
     </button>
   );
+}
+
+function toggleExpenseStatusOptimistically(expenses: Expense[], expenseId: string) {
+  let changed = false;
+
+  const updatedExpenses = expenses.map((expense) => {
+    if (expense.id !== expenseId) {
+      return expense;
+    }
+
+    changed = true;
+
+    if (expense.status === "PAID") {
+      const movementCents = expense.movements.reduce(
+        (sum, movement) => sum + movement.amountCents,
+        0,
+      );
+
+      return withExpenseAmounts(
+        {
+          ...expense,
+          paidAt: null,
+          status: "PENDING",
+        },
+        movementCents,
+      );
+    }
+
+    return withExpenseAmounts(
+      {
+        ...expense,
+        status: "PAID",
+      },
+      Math.max(expense.spentCents, expense.amountCents),
+    );
+  });
+
+  return changed ? updatedExpenses : expenses;
+}
+
+function withExpenseAmounts(expense: Expense, spentCents: number): Expense {
+  const remainingCents = Math.max(expense.amountCents - spentCents, 0);
+  const plannedCents = Math.max(expense.amountCents, spentCents);
+  const progress =
+    expense.amountCents > 0
+      ? Math.min(100, Math.round((spentCents / expense.amountCents) * 100))
+      : 0;
+
+  return {
+    ...expense,
+    plannedCents,
+    progress,
+    remainingCents,
+    spentCents,
+  };
+}
+
+function calculateTotals(members: Member[], expenses: Expense[]) {
+  const totals = Object.fromEntries(
+    currencies.map((currency) => [
+      currency,
+      {
+        incomeCents: 0,
+        paidCents: 0,
+        pendingCents: 0,
+        plannedCents: 0,
+        remainingCents: 0,
+      },
+    ]),
+  ) as DashboardData["totals"];
+
+  for (const member of members) {
+    for (const currency of currencies) {
+      totals[currency].incomeCents += member.incomes[currency];
+    }
+  }
+
+  for (const expense of expenses) {
+    totals[expense.currency].paidCents += expense.spentCents;
+    totals[expense.currency].pendingCents += expense.remainingCents;
+  }
+
+  for (const currency of currencies) {
+    totals[currency].plannedCents =
+      totals[currency].paidCents + totals[currency].pendingCents;
+    totals[currency].remainingCents =
+      totals[currency].incomeCents - totals[currency].plannedCents;
+  }
+
+  return totals;
 }
 
 function MiniMetric({ label, value }: { label: string; value: string }) {
