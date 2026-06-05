@@ -464,22 +464,7 @@ function ExpenseItem({ expense }: { expense: DashboardData["expenses"][number] }
       <div className="grid grid-cols-[44px_1fr_44px] items-center gap-2">
         <form action={toggleExpenseStatus}>
           <input name="expenseId" type="hidden" value={expense.id} />
-          <button
-            aria-label={isPaid ? "Reabrir gasto" : "Completar gasto"}
-            className={`flex h-10 w-10 items-center justify-center rounded-md border transition ${
-              isPaid
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border-slate-200 bg-white text-slate-500 hover:border-teal-300 hover:text-teal-700"
-            }`}
-            title={isPaid ? "Reabrir gasto" : "Completar gasto"}
-            type="submit"
-          >
-            {isPaid ? (
-              <Check aria-hidden className="h-5 w-5" />
-            ) : (
-              <Circle aria-hidden className="h-5 w-5" />
-            )}
-          </button>
+          <ExpenseStatusButton isPaid={isPaid} />
         </form>
 
         <div className="min-w-0">
@@ -595,6 +580,31 @@ function ExpenseItem({ expense }: { expense: DashboardData["expenses"][number] }
         </ul>
       ) : null}
     </li>
+  );
+}
+
+function ExpenseStatusButton({ isPaid }: { isPaid: boolean }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      aria-label={isPaid ? "Reabrir gasto" : "Completar gasto"}
+      aria-pressed={isPaid}
+      className={`flex h-10 w-10 cursor-pointer touch-manipulation items-center justify-center rounded-md border transition disabled:cursor-wait disabled:opacity-60 ${
+        isPaid
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : "border-slate-200 bg-white text-slate-500 hover:border-teal-300 hover:text-teal-700"
+      }`}
+      disabled={pending}
+      title={isPaid ? "Reabrir gasto" : "Completar gasto"}
+      type="submit"
+    >
+      {isPaid ? (
+        <Check aria-hidden className="h-5 w-5" />
+      ) : (
+        <Circle aria-hidden className="h-5 w-5" />
+      )}
+    </button>
   );
 }
 
